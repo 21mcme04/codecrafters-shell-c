@@ -1,7 +1,9 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #define validCommands 3
 char* commands[validCommands] = {"echo", "type", "exit"};
@@ -10,7 +12,8 @@ void checkUserInput(char* input);
 void echo(char* input);
 void type(char* input);
 int isValidCommand(char* command);
-void findCommandInPath(char* input, char* path);
+char* findCommandInPath(char* input, char* path);
+void executablesInPath(char* input);
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
@@ -56,6 +59,9 @@ void checkUserInput(char* input) {
     } else if(strcmp(command, "type") == 0) {
         type(input);
         free(duplicateInput);
+        return;
+    } else {
+        executablesInPath(input);
         return;
     }
     free(duplicateInput);
@@ -111,14 +117,14 @@ void type(char* input) {
     return;
 }
 
-void findCommandInPath(char* input, char* path) {
+char* findCommandInPath(char* input, char* path) {
     if(input == NULL || path == NULL) {
-        return;
+        return NULL;
     }
     char* pathCopy = strdup(path);
     if(!pathCopy) {
         perror("strdup in findCommandInPath");
-        return;
+        return NULL;
     }
     char* pathToken = strtok(pathCopy, ":");
     while(pathToken != NULL) {
@@ -126,19 +132,60 @@ void findCommandInPath(char* input, char* path) {
         if(!commandPath) {
             perror("malloc in findCommandInPath");
             free(pathCopy);
-            return;
+            return NULL;
         }
         sprintf(commandPath, "%s/%s", pathToken, input);
         if(access(commandPath, X_OK) == 0) {
-            printf("%s is %s\n", input, commandPath);
-            free(commandPath);
+            // printf("%s is %s\n", input, commandPath);
             free(pathCopy);
-            return;
+            return commandPath;
         }
         free(commandPath);
         pathToken = strtok(NULL, ":");
     }
     free(pathCopy);
-    printf("%s: not found\n", input);
+    // printf("%s: not found\n", input);
+    return NULL;
+}
+
+void executablesInPath(char* input) {
+    char* duplicateInput = strdup(input);
+    char* path = getenv("PATH");
+    if(!duplicateInput) {
+        perror("strdup in executablesInPath");
+        return;
+    }
+    char* command = strtok(duplicateInput, " ");
+    char* commandPath = findCommandInPath(command, path);
+    if(commandPath != NULL) {
+        if(!duplicateInput) {
+            perror("strdup in executablesInPath");
+            return;
+        }
+        char* argumentArray[100];
+        int argumentCount = 0;
+        char* argument = strtok(input, " ");
+        while(argument != NULL) {
+            if(!isspace(argument[0])){
+                argumentArray[argumentCount] = argument;
+                argumentCount++;
+            }
+            argument = strtok(NULL, " ");
+        }
+        printf("Argument count: %d\n", argumentCount);
+        for(int i = 0; i< argumentCount; i++) {
+            printf("%s\n", argumentArray[i]);
+        }
+        pid_t pid = fork();
+        if(pid == 0) {
+            execv(commandPath, argumentArray);
+            perror("execv in executablesInPath");
+        } else if(pid < 0) {
+            perror("fork in executablesInPath");
+        } else {
+            wait(NULL);
+        }
+        free(duplicateInput);
+    }
     return;
 }
