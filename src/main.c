@@ -26,5 +26,8 @@ void checkUserInput(char* input) {
     if (inputSize > 0 && input[inputSize - 1] == '\n') {
         input[inputSize - 1] = '\0';
     }
+    if(strcmp(input, "exit 0") == 0) {
+        exit(0);
+    }
     printf("%s: command not found\n", input);
 }
