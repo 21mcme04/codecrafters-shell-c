@@ -1,8 +1,10 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 void checkUserInput(char* input);
+void echo(char* input);
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
@@ -29,5 +31,24 @@ void checkUserInput(char* input) {
     if(strcmp(input, "exit 0") == 0) {
         exit(0);
     }
+
+    char *duplicateInput = strdup(input);
+    char* command = strtok(duplicateInput, " ");
+    if(strcmp(command, "echo") == 0) {
+        echo(input);
+        return;
+    }
     printf("%s: command not found\n", input);
+}
+
+void echo(char* input) {
+    char *duplicateInput = strdup(input);
+    char* command = strtok(duplicateInput, " ");
+    char* argument = strtok(NULL, " ");
+    while(argument != NULL) {
+        printf("%s ", argument);
+        argument = strtok(NULL, " ");
+    }
+    printf("\n");
+    return;
 }
