@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+void checkUserInput(char* input);
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
@@ -11,5 +14,15 @@ int main(int argc, char *argv[]) {
   // Wait for user input
   char input[100];
   fgets(input, 100, stdin);
+  checkUserInput(input);
+
   return 0;
+}
+
+void checkUserInput(char* input) {
+    long inputSize = strlen(input);
+    if (inputSize > 0 && input[inputSize - 1] == '\n') {
+        input[inputSize - 1] = '\0';
+    }
+    printf("%s: command not found\n", input);
 }
