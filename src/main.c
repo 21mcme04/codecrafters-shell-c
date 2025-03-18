@@ -220,10 +220,32 @@ void cd(char* input) {
     char* command = strtok(duplicateInput, " ");
     char* argument = strtok(NULL, " ");
 
-    int successful = chdir(argument);
-    if(successful != 0) {
-        fprintf(stderr, "cd: %s: No such file or directory\n", argument);
+    if(argument[0] == '~') {
+        char* home = getenv("HOME");
+        if(home == NULL) {
+            perror("HOME not set");
+            free(duplicateInput);
+            return;
+        }
+        size_t newSize = strlen(home) + strlen(argument);
+        char* newPathWithHome = malloc(newSize);
+        if(!newPathWithHome) {
+            perror("Malloc in cd");
+        }
+        strcpy(newPathWithHome, home);
+        strcat(newPathWithHome, argument + 1);
+
+        int successful = chdir(newPathWithHome);
+        if(successful != 0) {
+            fprintf(stderr, "cd: %s: No such file or directory\n", argument);
+        }
+    } else {
+        int successful = chdir(argument);
+        if(successful != 0) {
+            fprintf(stderr, "cd: %s: No such file or directory\n", argument);
+        }
     }
 
+    free(duplicateInput);
     return;
 }
