@@ -4,9 +4,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+// #include <sys/syslimits.h> //for me to check, works in unix based systems
+#include <linux/limits.h> //for testing in codecrafters, works in linux based systems
 
-#define validCommands 3
-char* commands[validCommands] = {"echo", "type", "exit"};
+#define validCommands 4
+char* commands[validCommands] = {"echo", "type", "exit", "pwd"};
 
 void checkUserInput(char* input);
 void echo(char* input);
@@ -14,6 +16,7 @@ void type(char* input);
 int isValidCommand(char* command);
 char* findCommandInPath(char* input, char* path);
 void executablesInPath(char* input);
+void pwd();
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
@@ -60,7 +63,10 @@ void checkUserInput(char* input) {
         type(input);
         free(duplicateInput);
         return;
-    } else {
+    } else if(strcmp(command, "pwd") == 0){
+        pwd();
+        return;
+    }else {
         executablesInPath(input);
         return;
     }
@@ -139,7 +145,7 @@ char* findCommandInPath(char* input, char* path) {
             return NULL;
         }
         sprintf(commandPath, "%s/%s", pathToken, input);
-        if(access(commandPath, X_OK) == 0) {
+        if(access(commandPath, X_OK) == 0 || access(commandPath, F_OK) == 0) {
             // printf("%s is %s\n", input, commandPath);
             free(pathCopy);
             return commandPath;
@@ -189,6 +195,15 @@ void executablesInPath(char* input) {
         free(duplicateInput);
     } else {
         printf("%s: command not found\n", command);
+    }
+    return;
+}
+
+void pwd() {
+    char currentWorkingDirectory[PATH_MAX];
+    char* result = getcwd(currentWorkingDirectory, PATH_MAX);
+    if(result != NULL) {
+        printf("%s\n", result);
     }
     return;
 }
