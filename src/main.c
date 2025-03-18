@@ -7,8 +7,8 @@
 // #include <sys/syslimits.h> //for me to check, works in unix based systems
 #include <linux/limits.h> //for testing in codecrafters, works in linux based systems
 
-#define validCommands 4
-char* commands[validCommands] = {"echo", "type", "exit", "pwd"};
+#define validCommands 5
+char* commands[validCommands] = {"echo", "type", "exit", "pwd", "cd"};
 
 void checkUserInput(char* input);
 void echo(char* input);
@@ -17,6 +17,7 @@ int isValidCommand(char* command);
 char* findCommandInPath(char* input, char* path);
 void executablesInPath(char* input);
 void pwd();
+void cd(char* input);
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
@@ -66,6 +67,8 @@ void checkUserInput(char* input) {
     } else if(strcmp(command, "pwd") == 0){
         pwd();
         return;
+    } else if(strcmp(command, "cd") == 0){
+        cd(input);
     }else {
         executablesInPath(input);
         return;
@@ -205,5 +208,22 @@ void pwd() {
     if(result != NULL) {
         printf("%s\n", result);
     }
+    return;
+}
+
+void cd(char* input) {
+    char* duplicateInput = strdup(input);
+    if(!duplicateInput) {
+        perror("strdup in cd");
+        return;
+    }
+    char* command = strtok(duplicateInput, " ");
+    char* argument = strtok(NULL, " ");
+
+    int successful = chdir(argument);
+    if(successful != 0) {
+        fprintf(stderr, "cd: %s: No such file or directory\n", argument);
+    }
+
     return;
 }
