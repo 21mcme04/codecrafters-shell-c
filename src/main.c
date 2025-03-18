@@ -65,7 +65,6 @@ void checkUserInput(char* input) {
         return;
     }
     free(duplicateInput);
-    printf("%s: command not found\n", input);
 }
 
 void echo(char* input) {
@@ -110,7 +109,12 @@ void type(char* input) {
         if(isValidCommand(argumentArray[iteration])) {
             printf("%s is a shell builtin\n", argumentArray[iteration]);
         } else {
-            findCommandInPath(argumentArray[iteration], path);
+            char* commandPath = findCommandInPath(argumentArray[iteration], path);
+            if(commandPath != NULL) {
+                printf("%s is %s\n", argumentArray[iteration], commandPath);
+            } else {
+                printf("%s: not found\n", argumentArray[iteration]);
+            }
         }
     }
     free(duplicateInput);
@@ -172,10 +176,7 @@ void executablesInPath(char* input) {
             }
             argument = strtok(NULL, " ");
         }
-        printf("Argument count: %d\n", argumentCount);
-        for(int i = 0; i< argumentCount; i++) {
-            printf("%s\n", argumentArray[i]);
-        }
+        argumentArray[argumentCount] = NULL;
         pid_t pid = fork();
         if(pid == 0) {
             execv(commandPath, argumentArray);
@@ -186,6 +187,8 @@ void executablesInPath(char* input) {
             wait(NULL);
         }
         free(duplicateInput);
+    } else {
+        printf("%s: command not found\n", command);
     }
     return;
 }
