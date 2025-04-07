@@ -4,8 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-// #include <sys/syslimits.h> //for me to check, works in unix based systems
-#include <linux/limits.h> //for testing in codecrafters, works in linux based systems
+#include <sys/syslimits.h> //for me to check, works in unix based systems
+// #include <linux/limits.h> //for testing in codecrafters, works in linux based systems
 
 #define validCommands 5
 char* commands[validCommands] = {"echo", "type", "exit", "pwd", "cd"};
