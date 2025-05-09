@@ -4,8 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <sys/syslimits.h> //for me to check, works in unix based systems
-// #include <linux/limits.h> //for testing in codecrafters, works in linux based systems
+// #include <sys/syslimits.h> //for me to check, works in unix based systems
+#include <linux/limits.h> //for testing in codecrafters, works in linux based systems
 
 #define validCommands 5
 char* commands[validCommands] = {"echo", "type", "exit", "pwd", "cd"};
@@ -18,6 +18,7 @@ char* findCommandInPath(char* input, char* path);
 void executablesInPath(char* input);
 void pwd();
 void cd(char* input);
+char** parse_arguments(const char* input, int* argc_out);
 
 int main(int argc, char *argv[]) {
   // Flush after every printf
@@ -77,16 +78,17 @@ void checkUserInput(char* input) {
 }
 
 void echo(char* input) {
-    char *duplicateInput = strdup(input);
-    char* command = strtok(duplicateInput, " ");
-    char* argument = strtok(NULL, " ");
-    while(argument != NULL) {
-        printf("%s ", argument);
-        argument = strtok(NULL, " ");
+    int argc;
+    char** argv = parse_arguments(input, &argc);
+
+    for (int i = 1; i < argc; i++) { // skip "echo"
+        printf("%s", argv[i]);
+        if (i < argc - 1) printf(" ");
     }
     printf("\n");
-    free(duplicateInput);
-    return;
+
+    for (int i = 0; i < argc; i++) free(argv[i]);
+    free(argv);
 }
 
 int isValidCommand(char* input) {
@@ -175,27 +177,25 @@ void executablesInPath(char* input) {
             perror("strdup in executablesInPath");
             return;
         }
-        char* argumentArray[100];
-        int argumentCount = 0;
-        char* argument = strtok(input, " ");
-        while(argument != NULL) {
-            if(!isspace(argument[0])){
-                argumentArray[argumentCount] = argument;
-                argumentCount++;
-            }
-            argument = strtok(NULL, " ");
-        }
-        argumentArray[argumentCount] = NULL;
+
+        int argc;
+        char** argv = parse_arguments(input, &argc);
+        argv[argc] = NULL;
+
         pid_t pid = fork();
-        if(pid == 0) {
-            execv(commandPath, argumentArray);
+        if (pid == 0) {
+            execv(commandPath, argv);
             perror("execv in executablesInPath");
-        } else if(pid < 0) {
+            exit(1);
+        } else if (pid < 0) {
             perror("fork in executablesInPath");
         } else {
             wait(NULL);
         }
-        free(duplicateInput);
+
+        for (int i = 0; i < argc; i++) free(argv[i]);
+        free(argv);
+
     } else {
         printf("%s: command not found\n", command);
     }
@@ -248,4 +248,43 @@ void cd(char* input) {
 
     free(duplicateInput);
     return;
+}
+
+
+char** parse_arguments(const char* input, int* argc_out) {
+    char** argv = malloc(sizeof(char*) * 100);  // Max 100 args
+    int argc = 0;
+
+    int i = 0;
+    while (input[i] != '\0') {
+        while (isspace(input[i])) i++; // skip leading spaces
+        if (input[i] == '\0') break;
+
+        char buffer[1024] = {0};
+        int j = 0;
+        int in_quote = 0;
+        char quote_char = '\0';
+
+        while (input[i] != '\0' && (in_quote || !isspace(input[i]))) {
+            if ((input[i] == '\'' || input[i] == '"')) {
+                if (!in_quote) {
+                    in_quote = 1;
+                    quote_char = input[i++];
+                } else if (input[i] == quote_char) {
+                    in_quote = 0;
+                    i++;
+                } else {
+                    buffer[j++] = input[i++];
+                }
+            } else {
+                buffer[j++] = input[i++];
+            }
+        }
+        buffer[j] = '\0';
+        argv[argc++] = strdup(buffer);
+    }
+
+    argv[argc] = NULL;
+    if (argc_out) *argc_out = argc;
+    return argv;
 }
