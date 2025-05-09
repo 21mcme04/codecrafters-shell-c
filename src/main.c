@@ -164,23 +164,14 @@ char* findCommandInPath(char* input, char* path) {
 }
 
 void executablesInPath(char* input) {
-    char* duplicateInput = strdup(input);
+    int argc;
+    char** argv = parse_arguments(input, &argc);
+    argv[argc] = NULL;
+
     char* path = getenv("PATH");
-    if(!duplicateInput) {
-        perror("strdup in executablesInPath");
-        return;
-    }
-    char* command = strtok(duplicateInput, " ");
+    char* command = argv[0];
     char* commandPath = findCommandInPath(command, path);
     if(commandPath != NULL) {
-        if(!duplicateInput) {
-            perror("strdup in executablesInPath");
-            return;
-        }
-
-        int argc;
-        char** argv = parse_arguments(input, &argc);
-        argv[argc] = NULL;
 
         pid_t pid = fork();
         if (pid == 0) {
