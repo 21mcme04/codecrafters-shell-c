@@ -276,10 +276,29 @@ char** parse_arguments(const char* input, int* argc_out) {
                 } else {
                     buffer[j++] = input[i++];
                 }
+            } else if (input[i] == '\\') {
+                if (in_quote && quote_char == '\'') {
+                    // In single quotes, backslash is literal
+                    buffer[j++] = input[i++];
+                }else if (in_quote && quote_char == '"') {
+                    i++; // skip the backslash
+                    if (input[i] == '"' || input[i] == '\\' || input[i] == '$' || input[i] == '`') {
+                        buffer[j++] = input[i++];
+                    } else if (input[i] != '\0') {
+                        buffer[j++] = '\\';
+                        buffer[j++] = input[i++];
+                    }
+                } else {
+                    i++; // skip the backslash
+                    if (input[i] != '\0') {
+                        buffer[j++] = input[i++];
+                    }
+                }
             } else {
                 buffer[j++] = input[i++];
             }
         }
+
         buffer[j] = '\0';
         argv[argc++] = strdup(buffer);
     }
